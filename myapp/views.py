@@ -13,7 +13,6 @@ def book_get_or_post(request):
     s = Book.objects.all()
 
     if request.method == 'POST':
-        print("AHAHAH")
         data = JSONParser().parse(request)
         serializer = serializers.BookSerializer(data=data)
         if serializer.is_valid():
@@ -23,8 +22,7 @@ def book_get_or_post(request):
             return JsonResponse(data, status=500)
 
     if request.method == 'GET':
-        data = pp.serialize('json', s)
-        return JsonResponse(data, safe=False)
+        return JsonResponse(list(s.values()), safe=False)
 
     return HttpResponse(status=400)
 
@@ -35,11 +33,11 @@ def book_patch_or_delete(request, pk):
     if request.method == 'PATCH':
         data = JSONParser().parse(request)
         s.filter(pk=pk).update(**data)
-        return JsonResponse(data, status=500)
+        return JsonResponse(data, status=200)
 
     if request.method == 'DELETE':
         s.filter(pk=pk).delete()
-        return HttpResponse(status=200)
+        return HttpResponse(status=202)
 
     return HttpResponse(status=400)
 
@@ -48,13 +46,11 @@ def author_post_or_get(request):
     s = Author.objects.all()
 
     if request.method == 'GET':
-        print(len(s.values_list()))
-        data = pp.serialize('json', s)
-        return JsonResponse(data, safe=False)
+        return JsonResponse(list(s.values()), safe=False)
 
     if request.method == 'POST':
         data = JSONParser().parse(request)
-        serializer = serializers.BookSerializer(data=data)
+        serializer = serializers.AuthorSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return JsonResponse(data, status=200, safe=False)
@@ -70,10 +66,10 @@ def author_patch_or_delete(request, pk):
     if request.method == 'PATCH':
         data = JSONParser().parse(request)
         s.filter(pk=pk).update(**data)
-        return JsonResponse(data, status=500)
+        return JsonResponse(data, status=200)
 
     if request.method == 'DELETE':
         s.filter(pk=pk).delete()
-        return HttpResponse(status=200)
+        return HttpResponse(status=202)
 
     return HttpResponse(status=400)

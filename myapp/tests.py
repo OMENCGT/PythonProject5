@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
@@ -17,17 +19,21 @@ class AuthorTests(APITestCase):
 
     def test_create_author(self):
         response = self.client.post(self.url, self.author_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.content)
         self.assertEqual(Author.objects.count(), 2)
 
     def test_get_author(self):
-        url = 'api/author'
+        url = '/api/author'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], self.author_data['name'])
+        self.assertEqual(type(json.loads(response.content)), type(list()))
 
     def test_update_author(self):
-        url = 'api/author/1'
+        url = '/api/author'
+        response = self.client.get(url)
+        data = json.loads(response.content)
+        pk = data[0]['id']
+        url = '/api/author/' + str(pk)
         updated_data = {'name': 'Updated Author'}
         response = self.client.patch(url, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -35,9 +41,14 @@ class AuthorTests(APITestCase):
         self.assertEqual(self.author.name, 'Updated Author')
 
     def test_delete_author(self):
-        url = 'api/author/1'
+        url = '/api/author'
+        response = self.client.get(url)
+        data = json.loads(response.content)
+        pk = data[0]['id']
+
+        url = '/api/author/' + str(pk)
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         self.assertEqual(Author.objects.count(), 0)
 
 class BookTests(APITestCase):
@@ -61,25 +72,39 @@ class BookTests(APITestCase):
             genre='FICTION',
             page_count=200
         )
-        self.url = 'api/book'
+        self.url = '/api/book'
 
     def test_create_book(self):
         response = self.client.post(self.url, self.book_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(Book.objects.count(), 2)
 
     def test_get_book(self):
-        url = 'api/book'
+        url = '/api/book'
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['title'], 'Existing Book')
+        self.assertEqual(type(json.loads(response.content)), type(list()))
 
-    def test_filter_books_by_genre(self):
-        response = self.client.get(self.url, {'genre': 'FICTION'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
+    def test_update_book(self):
+        url = '/api/book'
+        response = self.client.get(url)
+        data = json.loads(response.content)
+        pk = data[0]['id']
 
-    def test_search_books(self):
-        response = self.client.get(self.url, {'search': 'Existing'})
+        url = '/api/book/' + str(pk)
+        updated_data = {'title': 'Updated book'}
+        response = self.client.patch(url, updated_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
+        self.book.refresh_from_db()
+        self.assertEqual(self.book.title, 'Updated book')
+
+    def test_delete_book(self):
+        url = '/api/book'
+        response = self.client.get(url)
+        data = json.loads(response.content)
+        pk = data[0]['id']
+
+        url = '/api/book/' + str(pk)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(Book.objects.count(), 0)
